@@ -1,0 +1,146 @@
+:root {
+  color-scheme: light;
+  font-family: Georgia, "Times New Roman", serif;
+  color: #202a27;
+  background: #f4f5ef;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(ellipse at 92% 0%, rgba(223, 232, 207, 0.68), transparent 34rem),
+    #f4f5ef;
+}
+
+.page {
+  width: min(100% - 40px, 760px);
+  margin: 0 auto;
+  padding: 78px 0 96px;
+}
+
+.page-header {
+  padding-bottom: 40px;
+  border-bottom: 1px solid #cbd2c8;
+}
+
+.eyebrow {
+  margin: 0 0 16px;
+  color: #5a7665;
+  font: 700 0.72rem/1.2 Arial, sans-serif;
+  letter-spacing: 0.12em;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 12px;
+  font-size: 4rem;
+  font-weight: 400;
+  line-height: 1.05;
+}
+
+.intro {
+  margin-bottom: 0;
+  color: #5f6c65;
+  font-size: 1.08rem;
+}
+
+.repository-section {
+  padding-top: 34px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.section-heading h2 {
+  margin-bottom: 0;
+  font-size: 1.3rem;
+  font-weight: 400;
+}
+
+.repository-count {
+  flex: 0 0 auto;
+  margin-bottom: 0;
+  color: #68736b;
+  font: 0.82rem/1.4 Arial, sans-serif;
+}
+
+.repository-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid #cbd2c8;
+}
+
+.repository-item {
+  padding: 22px 0 23px;
+  border-bottom: 1px solid #cbd2c8;
+}
+
+.repository-item h3 {
+  margin-bottom: 8px;
+  font: 600 1.12rem/1.4 Arial, sans-serif;
+}
+
+.repository-item a {
+  color: #245d49;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.repository-item a:hover {
+  color: #163c30;
+}
+
+.repository-description {
+  margin-bottom: 12px;
+  color: #4f5d55;
+  font-size: 0.98rem;
+  line-height: 1.6;
+}
+
+.starred-at {
+  color: #778078;
+  font: 0.78rem/1.4 Arial, sans-serif;
+}
+
+.error-message {
+  color: #9b382e;
+  font: 0.95rem/1.5 Arial, sans-serif;
+}
+
+@media (max-width: 520px) {
+  .page {
+    width: min(100% - 32px, 760px);
+    padding-top: 52px;
+  }
+
+  .page-header {
+    padding-bottom: 30px;
+  }
+
+  h1 {
+    font-size: 2.75rem;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+  }
+}
