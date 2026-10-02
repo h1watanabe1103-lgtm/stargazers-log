@@ -1,0 +1,20 @@
+[
+  {
+    "repository": "microsoft/vscode",
+    "description": "Visual Studio Code is a code editor redefined and optimized for building and debugging modern web and cloud applications.",
+    "url": "https://github.com/microsoft/vscode",
+    "starred_at": "2025-02-14"
+  },
+  {
+    "repository": "facebook/react",
+    "description": "The library for web and native user interfaces.",
+    "url": "https://github.com/facebook/react",
+    "starred_at": "2025-01-08"
+  },
+  {
+    "repository": "vitejs/vite",
+    "description": "Next generation frontend tooling. It's fast!",
+    "url": "https://github.com/vitejs/vite",
+    "starred_at": "2024-11-21"
+  }
+]
