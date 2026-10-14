@@ -1,16 +1,43 @@
-# React + Vite
+# 社員スキル一覧アプリ
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Reactのコンポーネント分割と検索機能を学習・応用して作成した、社内向けの社員スキル検索アプリケーションです。
 
-Currently, two official plugins are available:
+##使用技術
+- **JavaScript (ES6+)**
+- **React** (useState フック)
+- **Vite** (開発ビルドツール)
+- **Git / GitHub**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+##主な機能
+- **社員一覧表示**: 10名分の社員データ（氏名・所属・スキル・稼働ステータス）をテーブル形式で一覧表示します。
+- **キーワード検索機能**: 検索バーに入力したキーワード（氏名、所属、スキル名）に一致する社員をリアルタイムで絞り込みます。
+- **コンポーネントのモジュール化**: 画面のパーツごとにコンポーネントを独立したファイルに分割し、メンテナンス性と再利用性を高めています。
 
-## React Compiler
+##フォルダ構成
+```text
+src/
+ ┣ components/
+ ┃  ┣ ProductCategoryRow.jsx  # （※商品一覧の流用パーツ）
+ ┃  ┣ ProductRow.jsx          # 社員1行分の表示パーツ
+ ┃  ┣ ProductTable.jsx        # テーブル全体の表示パーツ
+ ┃  ┗ SearchBar.jsx           # 検索バーのパーツ
+ ┣ App.jsx                    # メインの親コンポーネント（社員データを管理）
+ ┣ main.jsx
+ ┗ index.css
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-## Expanding the Oxlint configuration
+ 動作方法（ローカル環境での起動手順）
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+ このリポジトリをクローン後、以下のコマンドを実行してローカルサーバーを起動してください。
+
+ # 1. リポジトリのクローン
+git clone <あなたのリポジトリのURL>
+
+# 2. フォルダへ移動
+cd <プロジェクトのフォルダ名>
+
+# 3. 必要なパッケージのインストール
+npm install
+
+# 4. 開発用サーバーの起動
+npm run dev
