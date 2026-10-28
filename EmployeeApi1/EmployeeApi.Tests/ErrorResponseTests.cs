@@ -61,6 +61,45 @@ public class ErrorResponseTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task PostEmployee_InvalidFields_ReturnsJapaneseFieldErrors()
+    {
+        var admin = await AdminClientAsync();
+
+        var res = await admin.PostAsJsonAsync("/employees", new
+        {
+            name = "",
+            department = new string('x', 101),
+            skills = new[] { new { name = new string('y', 101) } }
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        var json = await res.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("入力内容に誤りがあります。", json.GetProperty("title").GetString());
+        Assert.True(json.GetProperty("errors").TryGetProperty("Name", out _));
+        Assert.True(json.GetProperty("errors").TryGetProperty("Department", out _));
+        Assert.True(json.GetProperty("errors").TryGetProperty("Skills[0].Name", out _));
+    }
+
+    [Fact]
+    public async Task PostEmployee_OverpostedIdsAreIgnored()
+    {
+        var admin = await AdminClientAsync();
+
+        var res = await admin.PostAsJsonAsync("/employees", new
+        {
+            id = 900000,
+            name = "テスト 太郎",
+            department = "開発部",
+            skills = new[] { new { id = 900001, employeeId = 900000, name = "C#" } }
+        });
+
+        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+        var json = await res.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.NotEqual(900000, json.GetProperty("id").GetInt32());
+        Assert.NotEqual(900001, json.GetProperty("skills")[0].GetProperty("id").GetInt32());
+    }
+
+    [Fact]
     public async Task PostEmployee_NotJson_Returns415WithJapaneseTitle()
     {
         var admin = await AdminClientAsync();
