@@ -18,34 +18,26 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Extract application source
-        run: unzip -q EmployeeApi1.zip -d .ci-src
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: .ci-src/EmployeeApi1/frontend/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install frontend dependencies
-        working-directory: .ci-src/EmployeeApi1/frontend
         run: npm ci
 
       - name: Run frontend tests (npm test)
-        working-directory: .ci-src/EmployeeApi1/frontend
         run: npm test
 
       - name: Build frontend
-        working-directory: .ci-src/EmployeeApi1/frontend
         run: npm run build
 
       - name: Install Playwright Chromium
-        working-directory: .ci-src/EmployeeApi1/frontend
         run: npx playwright install --with-deps chromium
 
       - name: Run browser screen-operation tests
-        working-directory: .ci-src/EmployeeApi1/frontend
         run: npm run test:e2e
 
       - name: Upload Playwright report
@@ -53,7 +45,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: .ci-src/EmployeeApi1/frontend/playwright-report/
+          path: playwright-report/
           if-no-files-found: ignore
           retention-days: 7
 
@@ -64,29 +56,26 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Extract application source
-        run: unzip -q EmployeeApi1.zip -d .ci-src
-
       - name: Set up .NET 10
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
 
       - name: Restore API dependencies
-        run: dotnet restore .ci-src/EmployeeApi1/EmployeeApi.slnx
+        run: dotnet restore EmployeeApi1/EmployeeApi.slnx
 
       - name: Build API
-        run: dotnet build .ci-src/EmployeeApi1/EmployeeApi.slnx --configuration Release --no-restore
+        run: dotnet build EmployeeApi1/EmployeeApi.slnx --configuration Release --no-restore
 
       - name: Test API with coverage
-        run: dotnet test .ci-src/EmployeeApi1/EmployeeApi.slnx --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory .ci-src/EmployeeApi1/TestResults
+        run: dotnet test EmployeeApi1/EmployeeApi.slnx --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory EmployeeApi1/TestResults
 
       - name: Upload API test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: api-test-results
-          path: .ci-src/EmployeeApi1/TestResults/
+          path: EmployeeApi1/TestResults/
           if-no-files-found: ignore
           retention-days: 7
 
@@ -98,11 +87,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Extract API source
-        run: unzip -q EmployeeApi1.zip -d .ci-src
-
       - name: Validate Compose configuration
-        working-directory: .ci-src/EmployeeApi1
+        working-directory: EmployeeApi1
         run: docker compose config --quiet
         env:
           MSSQL_SA_PASSWORD: Ci_Passw0rd!2026
@@ -111,4 +97,4 @@ jobs:
           SEED_ADMIN_PASSWORD: CiOnlyPassword123!
 
       - name: Build API Docker image
-        run: docker build -f .ci-src/EmployeeApi1/Dockerfile -t employee-api:ci .ci-src/EmployeeApi1
+        run: docker build -f EmployeeApi1/Dockerfile -t employee-api:ci EmployeeApi1
