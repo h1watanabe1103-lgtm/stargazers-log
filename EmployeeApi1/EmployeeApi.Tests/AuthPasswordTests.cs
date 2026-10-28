@@ -63,17 +63,22 @@ public class AuthPasswordTests : IClassFixture<ApiFactory>
     // ---- ログイン失敗の制限 ----
 
     [Fact]
-    public async Task Login_FiveFailures_LocksAccount_Returns429()
+    public async Task Login_FiveFailures_LocksAccountWithoutRevealingAccountExistence()
     {
         var (name, _) = await RegisterAsync();
 
         await FailLoginAsync(name, 5);              // 5回目までは、通常の401
-        var res = await LoginAsync(name, OldPassword);   // 6回目は、正しいパスワードでも、ロック中
+        var res = await LoginAsync(name, OldPassword);   // ロック中も、存在しないユーザーと同じ応答
 
-        Assert.Equal(HttpStatusCode.TooManyRequests, res.StatusCode);
-        Assert.True(res.Headers.Contains("Retry-After"));
+        Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
         var json = await res.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal("ログインに失敗した回数が多いため、一時的にロックしています。", json.GetProperty("title").GetString());
+        Assert.Equal("ユーザー名またはパスワードが正しくありません。", json.GetProperty("title").GetString());
+        var unknownUser = await LoginAsync("missing" + Guid.NewGuid().ToString("N"), OldPassword);
+        Assert.Equal(res.StatusCode, unknownUser.StatusCode);
+        var unknownJson = await unknownUser.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(json.GetProperty("title").GetString(), unknownJson.GetProperty("title").GetString());
+        Assert.Equal(json.TryGetProperty("detail", out var detail) ? detail.GetString() : null,
+            unknownJson.TryGetProperty("detail", out var unknownDetail) ? unknownDetail.GetString() : null);
     }
 
     [Fact]
@@ -179,7 +184,7 @@ public class AuthPasswordTests : IClassFixture<ApiFactory>
     {
         var (name, id) = await RegisterAsync();
         await FailLoginAsync(name, 5);
-        Assert.Equal(HttpStatusCode.TooManyRequests, (await LoginAsync(name, OldPassword)).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await LoginAsync(name, OldPassword)).StatusCode);
 
         var admin = await AdminClientAsync();
         var res = await admin.PostAsJsonAsync($"/auth/users/{id}/reset-password", new { newPassword = NewPassword });
