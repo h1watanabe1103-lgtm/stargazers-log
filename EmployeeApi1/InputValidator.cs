@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 // 社員の入力チェック。Employee と、その中の Skill を、属性（[Required] など）に従って検査する
 public static class InputValidator
 {
-    public static Dictionary<string, string[]> Validate(Employee employee)
+    public static Dictionary<string, string[]> Validate(EmployeeRequest employee)
     {
         var errors = new Dictionary<string, List<string>>();
 
