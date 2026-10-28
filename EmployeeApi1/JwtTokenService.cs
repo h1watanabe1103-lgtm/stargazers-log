@@ -10,7 +10,9 @@ public class JwtTokenService(IConfiguration config)
     {
         var jwt = config.GetSection("Jwt");
         var key = jwt["Key"] ?? throw new InvalidOperationException("Jwt:Key が設定されていません。");
-        var minutes = int.TryParse(jwt["ExpireMinutes"], out var m) ? m : 60;
+        var minutes = config.GetValue<int?>("Jwt:ExpireMinutes") ?? 60;
+        if (minutes is < 1 or > 1440)
+            throw new InvalidOperationException("Jwt:ExpireMinutes は1〜1440で設定してください。");
         var expires = DateTime.UtcNow.AddMinutes(minutes);
 
         var descriptor = new SecurityTokenDescriptor
