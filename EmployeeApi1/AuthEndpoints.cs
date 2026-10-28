@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Security.Cryptography;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -6,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 // ユーザー登録とログインのエンドポイント
 public static class AuthEndpoints
 {
+    private static readonly string DummyPasswordHash = CreateDummyPasswordHash();
+
     public static void MapAuthEndpoints(this WebApplication app)
     {
         var auth = app.MapGroup("/auth").WithTags("認証");
@@ -15,7 +18,7 @@ public static class AuthEndpoints
             .WithDescription("登録されるのは一般ユーザー（参照のみ）。管理者は、開発モードの初期データで用意する");
         auth.MapPost("/login", Login)
             .WithSummary("ログインする")
-            .WithDescription("成功するとアクセストークン（JWT）を返す。以降のAPIには「Authorization: Bearer トークン」を付けて呼ぶ。連続で失敗すると、一定時間ロックされる（429）");
+            .WithDescription("成功するとアクセストークン（JWT）を返す。以降のAPIには「Authorization: Bearer トークン」を付けて呼ぶ。連続で失敗すると一定時間ロックされる。");
         auth.MapPost("/change-password", ChangePassword)
             .RequireAuthorization()   // ログイン済みなら誰でも（自分のパスワードだけ変更できる）
             .WithSummary("パスワードを変更する（本人）")
@@ -51,7 +54,7 @@ public static class AuthEndpoints
 
     static async Task<IResult> Login(
         LoginRequest req, EmployeeDb db, IPasswordHasher<User> hasher,
-        JwtTokenService tokens, IConfiguration config, HttpContext http)
+        JwtTokenService tokens, IConfiguration config)
     {
         var errors = ValidateModel(req);
         if (errors.Count > 0)
@@ -63,25 +66,23 @@ public static class AuthEndpoints
 
         var user = await db.Users.FirstOrDefaultAsync(u => u.UserName == req.UserName);
 
-        // ユーザーが存在しない場合は、パスワードが違う場合と同じメッセージを返す（存在の有無を教えない）
+        // 未登録ユーザーもパスワード検証を行い、処理時間からのユーザー名推測を難しくする。
         if (user is null)
+        {
+            hasher.VerifyHashedPassword(new User(), DummyPasswordHash, req.Password);
             return TypedResults.Problem(title: "ユーザー名またはパスワードが正しくありません。", statusCode: StatusCodes.Status401Unauthorized);
+        }
 
         var now = DateTime.UtcNow;
 
-        // ロック中は、パスワードが合っていても、ログインさせない
-        if (user.LockoutEnd is { } lockEnd && lockEnd > now)
-        {
-            var seconds = (int)Math.Ceiling((lockEnd - now).TotalSeconds);
-            http.Response.Headers["Retry-After"] = seconds.ToString();
-            return TypedResults.Problem(
-                title: "ログインに失敗した回数が多いため、一時的にロックしています。",
-                detail: $"約{Math.Ceiling(seconds / 60.0)}分後に、もう一度お試しください。",
-                statusCode: StatusCodes.Status429TooManyRequests);
-        }
+        var isLockedOut = user.LockoutEnd is { } lockEnd && lockEnd > now;
 
-        if (hasher.VerifyHashedPassword(user, user.PasswordHash, req.Password) == PasswordVerificationResult.Failed)
+        var passwordResult = hasher.VerifyHashedPassword(user, user.PasswordHash, req.Password);
+        if (isLockedOut || passwordResult == PasswordVerificationResult.Failed)
         {
+            if (isLockedOut)
+                return InvalidCredentials();
+
             // ロックの期間が終わっていれば、解除して、数え直す
             user.LockoutEnd = null;
             user.FailedLoginCount++;
@@ -92,7 +93,7 @@ public static class AuthEndpoints
             }
             await db.SaveChangesAsync();
 
-            return TypedResults.Problem(title: "ユーザー名またはパスワードが正しくありません。", statusCode: StatusCodes.Status401Unauthorized);
+            return InvalidCredentials();
         }
 
         // 成功したら、失敗の回数を戻す
@@ -190,5 +191,16 @@ public static class AuthEndpoints
                 .Select(member => (Member: member, Message: r.ErrorMessage ?? "入力内容が正しくありません。")))
             .GroupBy(x => x.Member)
             .ToDictionary(g => g.Key, g => g.Select(x => x.Message).ToArray());
+    }
+
+    static IResult InvalidCredentials() =>
+        TypedResults.Problem(
+            title: "ユーザー名またはパスワードが正しくありません。",
+            statusCode: StatusCodes.Status401Unauthorized);
+
+    static string CreateDummyPasswordHash()
+    {
+        var randomPassword = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+        return new PasswordHasher<User>().HashPassword(new User(), randomPassword);
     }
 }
