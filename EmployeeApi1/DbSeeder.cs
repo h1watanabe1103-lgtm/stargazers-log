@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 // 動作確認用の初期データ（ダミー）を登録するクラス。開発モードでのみ呼び出す
 public static class DbSeeder
@@ -45,14 +46,21 @@ public static class DbSeeder
     }
 
     // 動作確認用のユーザー（ダミー）。管理者と一般ユーザーを1人ずつ用意する
-    public static async Task SeedUsersAsync(EmployeeDb db, IPasswordHasher<User> hasher)
+    public static async Task SeedUsersAsync(
+        EmployeeDb db,
+        IPasswordHasher<User> hasher,
+        IConfiguration configuration)
     {
         if (await db.Users.AnyAsync()) return;
 
-        db.Users.AddRange(
-            CreateUser("admin", "Admin_Passw0rd!", Roles.Admin),
-            CreateUser("user", "User_Passw0rd!", Roles.General));
+        var userName = configuration["Auth:SeedAdmin:UserName"];
+        var password = configuration["Auth:SeedAdmin:Password"];
+        if (string.IsNullOrWhiteSpace(userName) || !Regex.IsMatch(userName, "^[A-Za-z0-9_.-]{3,50}$"))
+            throw new InvalidOperationException("開発用管理者のユーザー名をAuth:SeedAdmin:UserNameに設定してください。");
+        if (string.IsNullOrEmpty(password) || password.Length is < 8 or > 100)
+            throw new InvalidOperationException("開発用管理者のパスワードをAuth:SeedAdmin:Passwordに8〜100文字で設定してください。");
 
+        db.Users.Add(CreateUser(userName, password, Roles.Admin));
         await db.SaveChangesAsync();
 
         User CreateUser(string userName, string password, string role)
