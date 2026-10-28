@@ -4,7 +4,7 @@ services:
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_PID: "Developer"
-      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Dev_Passw0rd!2026}
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in EmployeeApi1/.env}
     ports:
       - "1433:1433"          # dotnet run（ホスト側）からもつなげるように公開
     volumes:
@@ -20,26 +20,17 @@ services:
     build: .
     depends_on:
       db:
-        condition: service_healthy   # DBが起動完了してからAPIを起動
+        condition: service_healthy
     environment:
-      ASPNETCORE_ENVIRONMENT: Development   # Scalar（試用画面）を見るため
-      # JWT（ログインのトークン）の署名用の鍵。32文字以上。本番では、必ず別の値を環境変数で渡す
-      Jwt__Key: ${JWT_KEY:-dev-only-secret-key-change-me-0123456789abcdef}
-      # 接続先のホスト名は localhost ではなくサービス名「db」
-      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=EmployeeDb;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Dev_Passw0rd!2026};TrustServerCertificate=True;Connect Timeout=5"
+      ASPNETCORE_ENVIRONMENT: Development
+      Jwt__Key: ${JWT_KEY:?Set JWT_KEY in EmployeeApi1/.env}
+      Jwt__Issuer: EmployeeApi
+      Jwt__Audience: EmployeeApiClients
+      Auth__SeedAdmin__UserName: ${SEED_ADMIN_USERNAME:?Set SEED_ADMIN_USERNAME in EmployeeApi1/.env}
+      Auth__SeedAdmin__Password: ${SEED_ADMIN_PASSWORD:?Set SEED_ADMIN_PASSWORD in EmployeeApi1/.env}
+      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=EmployeeDb;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True"
     ports:
       - "8080:8080"
-
-  frontend:
-    build:
-      context: ./frontend
-      args:
-        # ブラウザーから見た、APIのURL（APIの公開ポート 8080）
-        VITE_API_URL: http://localhost:8080
-    depends_on:
-      - api
-    ports:
-      - "5173:80"          # http://localhost:5173 で開く（APIのCORSで許可済みのURL）
 
 volumes:
   sqlserver-data:
