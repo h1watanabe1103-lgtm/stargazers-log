@@ -1,0 +1,11 @@
+node_modules
+dist
+.git
+.vscode
+.claude
+.env*
+*.log
+Dockerfile
+.dockerignore
+   frontend
+   **/node_modules

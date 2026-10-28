@@ -1,3 +1,4 @@
+/* Viteの初期サンプル用スタイル。アプリ独自の画面スタイルはindex.cssに定義する。 */
 .counter {
   font-size: 16px;
   padding: 5px 10px;

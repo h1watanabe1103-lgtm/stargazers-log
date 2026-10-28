@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.13" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.13" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.17.13" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
+  </ItemGroup>
+
+  <!-- (xmlだから//は使えない) 
+  // 本体プロジェクトは、自分のフォルダ配下の .cs ファイルを自動で全部ビルド対象にしてしまう。
+  // EmployeeApi.Tests/ はその配下にあるため、そのままだと本体が UnitTest1.cs などを取り込み、
+  // Xunit が見つからずビルドエラーになる為、「EmployeeApi.Tests フォルダの中身は本体に含めない」指定を行う。
+  -->
+  <ItemGroup>
+    <Compile Remove="EmployeeApi.Tests/**" />
+    <Content Remove="EmployeeApi.Tests/**" />
+    <EmbeddedResource Remove="EmployeeApi.Tests/**" />  
+    <None Remove="EmployeeApi.Tests/**" />
+  </ItemGroup>
+</Project>

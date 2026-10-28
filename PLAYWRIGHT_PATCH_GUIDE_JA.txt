@@ -1,0 +1,13 @@
+my-app2 自動テスト②（Playwright）追加パッチ 適用手順
+
+1. このZIPを、現在使っているプロジェクトフォルダー
+   C:\Users\watanabeh.UBNET\Desktop\my-app2
+   に展開します。
+2. package.json、README.md、.gitignore の置き換えを求められたら置き換えます。
+   これはプロジェクト全体を入れ替えるZIPではなく、追加・更新するファイルだけのパッチです。
+3. package-lock.json は意図的に含めていません。実行時に npm install が現在の環境に合わせて更新します。
+4. my-app2 フォルダー直下の run-playwright-tests.bat をダブルクリックします。
+5. テストが完了したら、表示された結果が分かるスクリーンショットを保存してください。
+
+このPlaywrightテストはテスト用API応答を使います。実際の社員データベースには登録しません。
+初回はChromiumブラウザーのダウンロードが必要なので、インターネット接続が必要です。
