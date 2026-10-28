@@ -33,3 +33,26 @@ public class Skill
 
     public int EmployeeId { get; set; }   // どの社員のスキルか（外部キー）。クライアントは送らない
 }
+
+public class EmployeeRequest
+{
+    [Display(Name = "氏名")]
+    [Required(ErrorMessage = "{0}は必須です。")]
+    [StringLength(100, ErrorMessage = "{0}は{1}文字以内で入力してください。")]
+    public string Name { get; set; } = "";
+
+    [Display(Name = "所属")]
+    [Required(ErrorMessage = "{0}は必須です。")]
+    [StringLength(100, ErrorMessage = "{0}は{1}文字以内で入力してください。")]
+    public string Department { get; set; } = "";
+
+    public List<SkillRequest>? Skills { get; set; } = new();
+}
+
+public class SkillRequest
+{
+    [Display(Name = "スキル名")]
+    [Required(ErrorMessage = "{0}は必須です。")]
+    [StringLength(100, ErrorMessage = "{0}は{1}文字以内で入力してください。")]
+    public string Name { get; set; } = "";
+}
