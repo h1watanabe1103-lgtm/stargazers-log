@@ -29,3 +29,4 @@ playwright/.cache/
 EmployeeApi1/.env
 EmployeeApi1/.env.*
 EmployeeApi1/appsettings.Development.json
+!EmployeeApi1/.env.example
