@@ -1,0 +1,120 @@
+name: Import employee app sources
+
+on:
+  push:
+    branches: ["10月後半"]
+    paths:
+      - "EmployeeApi1.zip"
+      - ".github/workflows/import-projects.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-and-verify:
+    name: Import, verify, and commit app sources
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the branch
+        uses: actions/checkout@v4
+        with:
+          ref: "10月後半"
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Extract the uploaded application archive
+        run: unzip -q EmployeeApi1.zip -d .import-source
+
+      - name: Copy frontend source to the repository root
+        shell: bash
+        run: |
+          rm -rf src
+          rsync -a \
+            --exclude='.env.development' \
+            --exclude='node_modules' \
+            --exclude='dist' \
+            --exclude='playwright-report' \
+            --exclude='test-results' \
+            .import-source/EmployeeApi1/frontend/ ./
+
+      - name: Copy API source to EmployeeApi1
+        shell: bash
+        run: |
+          mkdir -p EmployeeApi1
+          rsync -a \
+            --exclude='frontend' \
+            --exclude='.github' \
+            --exclude='.devcontainer' \
+            --exclude='.vscode' \
+            --exclude='appsettings.Development.json' \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            .import-source/EmployeeApi1/ EmployeeApi1/
+
+          # Do not commit local secrets or per-developer environment settings.
+          rm -f EmployeeApi1/appsettings.Development.json EmployeeApi1/.env EmployeeApi1/.env.*
+          touch .gitignore
+          for entry in ".env.development" "EmployeeApi1/.env" "EmployeeApi1/.env.*" "EmployeeApi1/appsettings.Development.json"; do
+            grep -qxF "$entry" .gitignore || echo "$entry" >> .gitignore
+          done
+          rm -f practice.ts
+          rm -rf .import-source
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Run frontend unit and component tests
+        run: npm test
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser screen-operation tests
+        run: npm run test:e2e
+
+      - name: Restore API dependencies
+        run: dotnet restore EmployeeApi1/EmployeeApi.slnx
+
+      - name: Build API
+        run: dotnet build EmployeeApi1/EmployeeApi.slnx --configuration Release --no-restore
+
+      - name: Test API
+        run: dotnet test EmployeeApi1/EmployeeApi.slnx --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory EmployeeApi1/TestResults
+
+      - name: Validate Docker Compose
+        working-directory: EmployeeApi1
+        run: docker compose config --quiet
+        env:
+          MSSQL_SA_PASSWORD: Ci_Passw0rd!2026
+          JWT_KEY: ci-only-signing-key-0123456789abcdef0123456789abcdef
+          SEED_ADMIN_USERNAME: ci-admin
+          SEED_ADMIN_PASSWORD: CiOnlyPassword123!
+
+      - name: Build API Docker image
+        run: docker build -f EmployeeApi1/Dockerfile -t employee-api:ci EmployeeApi1
+
+      - name: Commit integrated source files
+        shell: bash
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "Integrate employee app frontend and API source"
+            git push origin HEAD:"10月後半"
+          else
+            echo "The integrated source files are already up to date."
+          fi
