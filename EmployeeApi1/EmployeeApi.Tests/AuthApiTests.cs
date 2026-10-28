@@ -161,11 +161,40 @@ public class AuthApiTests : IClassFixture<ApiFactory>
         var name = "reg" + Guid.NewGuid().ToString("N")[..12];
 
         var res = await client.PostAsJsonAsync("/auth/register",
-            new { userName = name, password = "Valid_Passw0rd!" });
+            new { userName = name, password = "Valid_Passw0rd!", role = Roles.Admin });
 
         Assert.Equal(HttpStatusCode.Created, res.StatusCode);
         var json = await res.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("General", json.GetProperty("role").GetString());
+    }
+
+    [Fact]
+    public async Task Register_LongPassword_Returns400WithJapaneseFieldErrors()
+    {
+        var client = _factory.CreateClient();
+
+        var res = await client.PostAsJsonAsync("/auth/register",
+            new { userName = "long" + Guid.NewGuid().ToString("N")[..8], password = new string('p', 101) });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        var json = await res.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("入力内容に誤りがあります。", json.GetProperty("title").GetString());
+        Assert.True(json.GetProperty("errors").TryGetProperty("Password", out _));
+    }
+
+    [Fact]
+    public async Task Login_OversizedCredentials_Returns400WithJapaneseFieldErrors()
+    {
+        var client = _factory.CreateClient();
+
+        var res = await client.PostAsJsonAsync("/auth/login",
+            new { userName = new string('u', 51), password = new string('p', 101) });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        var json = await res.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("入力内容に誤りがあります。", json.GetProperty("title").GetString());
+        Assert.True(json.GetProperty("errors").TryGetProperty("UserName", out _));
+        Assert.True(json.GetProperty("errors").TryGetProperty("Password", out _));
     }
 
     [Fact]
