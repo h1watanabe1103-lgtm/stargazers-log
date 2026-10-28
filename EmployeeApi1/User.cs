@@ -40,10 +40,12 @@ public class LoginRequest
 {
     [Display(Name = "ユーザー名")]
     [Required(ErrorMessage = "{0}は必須です。")]
+    [StringLength(50, ErrorMessage = "{0}は{1}文字以内で入力してください。")]
     public string UserName { get; set; } = "";
 
     [Display(Name = "パスワード")]
     [Required(ErrorMessage = "{0}は必須です。")]
+    [StringLength(100, ErrorMessage = "{0}は{1}文字以内で入力してください。")]
     public string Password { get; set; } = "";
 }
 
@@ -52,6 +54,7 @@ public class ChangePasswordRequest
 {
     [Display(Name = "現在のパスワード")]
     [Required(ErrorMessage = "{0}は必須です。")]
+    [StringLength(100, ErrorMessage = "{0}は{1}文字以内で入力してください。")]
     public string CurrentPassword { get; set; } = "";
 
     [Display(Name = "新しいパスワード")]
