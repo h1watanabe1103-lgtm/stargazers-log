@@ -39,6 +39,23 @@ builder.Services.AddSingleton<JwtTokenService>();
 // 認証（トークンの検証）と権限
 var jwt = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwt["Key"] ?? throw new InvalidOperationException("Jwt:Key が設定されていません。");
+var jwtIssuer = jwt["Issuer"];
+var jwtAudience = jwt["Audience"];
+var jwtExpireMinutes = jwt.GetValue<int?>("ExpireMinutes") ?? 60;
+var maxFailedAttempts = builder.Configuration.GetValue("Auth:MaxFailedAttempts", 5);
+var lockoutMinutes = builder.Configuration.GetValue("Auth:LockoutMinutes", 15);
+if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
+    throw new InvalidOperationException("Jwt:Key はUTF-8で32バイト以上にしてください。");
+if (string.IsNullOrWhiteSpace(jwtIssuer))
+    throw new InvalidOperationException("Jwt:Issuer が設定されていません。");
+if (string.IsNullOrWhiteSpace(jwtAudience))
+    throw new InvalidOperationException("Jwt:Audience が設定されていません。");
+if (jwtExpireMinutes is < 1 or > 1440)
+    throw new InvalidOperationException("Jwt:ExpireMinutes は1〜1440で設定してください。");
+if (maxFailedAttempts is < 1 or > 20)
+    throw new InvalidOperationException("Auth:MaxFailedAttempts は1〜20で設定してください。");
+if (lockoutMinutes is < 1 or > 1440)
+    throw new InvalidOperationException("Auth:LockoutMinutes は1〜1440で設定してください。");
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -47,9 +64,9 @@ builder.Services
         options.TokenValidationParameters = new TokenValidationParameters // トークンの検証ルールを設定する
         {
             ValidateIssuer = true, // 発行者の検証の有効/無効(true/false)
-            ValidIssuer = jwt["Issuer"], // 有効な発行者の設定
+            ValidIssuer = jwtIssuer, // 有効な発行者の設定
             ValidateAudience = true, // 受信者の検証の有効/無効(true/false))
-            ValidAudience = jwt["Audience"], // 有効な受信者の設定
+            ValidAudience = jwtAudience, // 有効な受信者の設定
             ValidateIssuerSigningKey = true, // 署名鍵の検証の有効/無効(true/false)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)), // 署名鍵の設定
             ValidateLifetime = true, // 有効期限の検証の有効/無効(true/false)
@@ -82,7 +99,7 @@ builder.Services.AddOpenApi(options =>
     options.AddSchemaTransformer((schema, context, cancellationToken) =>
     {
         // Employee のときだけ、入力例を付ける
-        if (context.JsonTypeInfo.Type == typeof(Employee))
+        if (context.JsonTypeInfo.Type == typeof(EmployeeRequest))
         {
             schema.Examples = new List<JsonNode>
             {
@@ -116,7 +133,10 @@ using (var scope = app.Services.CreateScope())
     if (app.Environment.IsDevelopment())
     {
         await DbSeeder.SeedAsync(db);
-        await DbSeeder.SeedUsersAsync(db, scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>());
+        await DbSeeder.SeedUsersAsync(
+            db,
+            scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>(),
+            builder.Configuration);
     }
 }
 
@@ -181,12 +201,13 @@ app.Run();
 
 // 登録
 
-static async Task<IResult> CreateEmployee(Employee employee, EmployeeDb db)
+static async Task<IResult> CreateEmployee(EmployeeRequest request, EmployeeDb db)
 {
-    var errors = InputValidator.Validate(employee);
+    var errors = InputValidator.Validate(request);
     if (errors.Count > 0)
         return TypedResults.ValidationProblem(errors, title: "入力内容に誤りがあります。");
 
+    var employee = ToEmployee(request);
     db.Employees.Add(employee);
     await db.SaveChangesAsync();
     return TypedResults.Created($"/employees/{employee.Id}", employee);
@@ -206,10 +227,10 @@ static async Task<IResult> SearchEmployees(string keyword, EmployeeDb db)
 }
 
 // ID指定で1件を更新する。見つからなければ404。
-static async Task<IResult> UpdateEmployee(int id, Employee employee, EmployeeDb db)
+static async Task<IResult> UpdateEmployee(int id, EmployeeRequest request, EmployeeDb db)
 {
 
-    var errors = InputValidator.Validate(employee);
+    var errors = InputValidator.Validate(request);
     if (errors.Count > 0)
         return TypedResults.ValidationProblem(errors, title: "入力内容に誤りがあります。");
 
@@ -221,17 +242,17 @@ static async Task<IResult> UpdateEmployee(int id, Employee employee, EmployeeDb 
         .FirstOrDefaultAsync(e => e.Id == id); // ID指定で1件を取得する。見つからなければnullが返る。FindAsyncはIncludeが使えないので、FirstOrDefaultAsyncを使う。
     if (emp is null) return EmployeeNotFound();
 
-    emp.Name = employee.Name;
-    emp.Department = employee.Department;
+    emp.Name = request.Name;
+    emp.Department = request.Department;
     /*一致したスキルだけでなく、更新をしたいので古いスキルを削除し、新しいスキルを追加するようにする為、削除
     emp.Skills = employee.Skills;
     */
     // 古いスキルを削除する
     emp.Skills.Clear();
     // 新しいスキルを追加する　
-    foreach (var skill in employee.Skills) // foreachで1件ずつ追加する。foreach文は、配列やリストなどのコレクション（複数の要素をまとめて管理するデータ構造）内のすべての要素に対して、順番に同じ処理を繰り返し実行するための構文
+    foreach (var skill in request.Skills!) // foreachで1件ずつ追加する。foreach文は、配列やリストなどのコレクション（複数の要素をまとめて管理するデータ構造）内のすべての要素に対して、順番に同じ処理を繰り返し実行するための構文
     {
-        emp.Skills.Add(skill);
+        emp.Skills.Add(new Skill { Name = skill.Name });
     }
 
     await db.SaveChangesAsync();
@@ -254,5 +275,12 @@ static async Task<IResult> DeleteEmployee(int id, EmployeeDb db)
 // 該当の社員がいないときの返事（404）
 static IResult EmployeeNotFound() =>
     TypedResults.Problem(title: "指定した社員は見つかりません。", statusCode: StatusCodes.Status404NotFound);
+
+static Employee ToEmployee(EmployeeRequest request) => new()
+{
+    Name = request.Name,
+    Department = request.Department,
+    Skills = request.Skills!.Select(skill => new Skill { Name = skill.Name }).ToList()
+};
 
 public partial class Program { }
