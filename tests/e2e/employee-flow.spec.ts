@@ -11,8 +11,8 @@ type MockEmployee = {
 test('管理者が社員一覧を開き、検索してから社員を登録できる', async ({ page }) => {
   // APIをテスト用データに置き換え、実際の社員データを変更しない。
   let employees: MockEmployee[] = [
-    { id: 1, name: '山田太郎', department: '営業部', skills: [{ name: 'React' }] },
-    { id: 2, name: '鈴木花子', department: '開発部', skills: [{ name: 'TypeScript' }] },
+    { id: 1, name: '山田太郎', exact: true, department: '営業部', skills: [{ name: 'React' }] },
+    { id: 2, name: '鈴木花子', exact: true, department: '開発部', skills: [{ name: 'TypeScript' }] },
   ];
   let createdPayload: { name: string; department: string; skills: MockSkill[] } | null = null;
   const corsHeaders = {
@@ -87,14 +87,14 @@ test('管理者が社員一覧を開き、検索してから社員を登録で�
   await page.getByRole('button', { name: 'ログイン', exact: true }).click();
 
   await expect(page.getByRole('heading', { name: '社員スキル一覧' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: '山田太郎' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: '鈴木花子' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: '山田太郎', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: '鈴木花子', exact: true })).toBeVisible();
 
   // 2. 検索語を入力して絞り込み、対象外の社員が表示されないことを確認する。
   await page.getByPlaceholder('社員名・所属・スキルで検索...').fill('山田');
   await page.getByRole('button', { name: '検索' }).click();
-  await expect(page.getByRole('cell', { name: '山田太郎' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: '鈴木花子' })).toHaveCount(0);
+  await expect(page.getByRole('cell', { name: '山田太郎', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: '鈴木花子', exact: true })).toHaveCount(0);
 
   // 3. 社員を登録し、余白の除去も含めて保存後の一覧表示を確認する。
   await page.getByRole('button', { name: '社員を登録' }).click();
@@ -104,10 +104,10 @@ test('管理者が社員一覧を開き、検索してから社員を登録で�
   await page.getByLabel('スキル名 1').fill('Playwright');
   await page.getByRole('button', { name: '保存' }).click();
 
-  await expect(page.getByRole('cell', { name: '山田花子' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: '山田太郎' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: '山田花子', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: '山田太郎', exact: true })).toBeVisible();
   expect(createdPayload).toEqual({
-    name: '山田花子',
+    name: '山田花子', exact: true,
     department: '開発部',
     skills: [{ name: 'Playwright' }],
   });
@@ -124,13 +124,13 @@ test('スマートフォン幅でも社員一覧の全体が横にはみ出さ�
   const employees: MockEmployee[] = [
     {
       id: 1,
-      name: '山田太郎',
+      name: '山田太郎', exact: true,
       department: '営業部',
       skills: [{ name: 'React / TypeScript / アクセシビリティ' }],
     },
     {
       id: 2,
-      name: '鈴木花子',
+      name: '鈴木花子', exact: true,
       department: '開発部',
       skills: [{ name: 'SQL Server / Docker / .NET' }],
     },
