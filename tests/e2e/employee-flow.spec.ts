@@ -107,7 +107,7 @@ test('管理者が社員一覧を開き、検索してから社員を登録で�
   await expect(page.getByRole('cell', { name: '山田花子', exact: true })).toBeVisible();
   await expect(page.getByRole('cell', { name: '山田太郎', exact: true })).toBeVisible();
   expect(createdPayload).toEqual({
-    name: '山田花子', exact: true,
+    name: '山田花子',
     department: '開発部',
     skills: [{ name: 'Playwright' }],
   });
