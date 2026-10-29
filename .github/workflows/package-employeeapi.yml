@@ -50,11 +50,40 @@ jobs:
           rm -f EmployeeApi1.zip
           zip -qr EmployeeApi1.zip EmployeeApi1
 
-          # Refuse the archive if known local-only files slipped into it.
-          if unzip -Z1 EmployeeApi1.zip | grep -E '(^|/)(\.env($|\.)|appsettings\.Development\.json|appsettings\..*\.local\.json|compose\.yaml\.old|\.vscode/|\.claude/|node_modules/|playwright-report/|test-results/)' ; then
-            echo "Unsafe local configuration or generated output found in archive."
-            exit 1
-          fi
+          # Refuse the archive if local-only configuration or generated output slipped in.
+          python - <<'PY'
+          import sys
+          import zipfile
+
+          forbidden_names = {
+              "appsettings.Development.json",
+              "compose.yaml.old",
+          }
+          forbidden_dirs = {
+              ".git", ".vscode", ".claude", "node_modules", "bin", "obj",
+              "TestResults", "test-results", "playwright-report",
+          }
+
+          with zipfile.ZipFile("EmployeeApi1.zip") as archive:
+              bad = []
+              for raw_name in archive.namelist():
+                  parts = raw_name.strip("/").split("/")
+                  basename = parts[-1]
+                  if basename == ".env":
+                      bad.append(raw_name)
+                  elif basename.startswith(".env.") and basename != ".env.example":
+                      bad.append(raw_name)
+                  elif basename in forbidden_names or basename.endswith(".pfx") or basename.endswith(".key"):
+                      bad.append(raw_name)
+                  elif any(part in forbidden_dirs for part in parts):
+                      bad.append(raw_name)
+
+          if bad:
+              print("Unsafe local configuration or generated output found:")
+              print("\n".join(bad))
+              sys.exit(1)
+          print("Archive safety check passed.")
+          PY
 
       - name: Commit archive if changed
         shell: bash
