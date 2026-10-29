@@ -112,3 +112,90 @@ test('管理者が社員一覧を開き、検索してから社員を登録で�
     skills: [{ name: 'Playwright' }],
   });
 });
+
+
+test('スマートフォン幅でも社員一覧の全体が横にはみ出さない', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.addInitScript(() => {
+    sessionStorage.setItem('accessToken', 'mobile-layout-test-token');
+    sessionStorage.setItem('role', 'Admin');
+  });
+
+  const employees: MockEmployee[] = [
+    {
+      id: 1,
+      name: '山田太郎',
+      department: '営業部',
+      skills: [{ name: 'React / TypeScript / アクセシビリティ' }],
+    },
+    {
+      id: 2,
+      name: '鈴木花子',
+      department: '開発部',
+      skills: [{ name: 'SQL Server / Docker / .NET' }],
+    },
+  ];
+  const corsHeaders = {
+    'access-control-allow-origin': 'http://127.0.0.1:4173',
+    'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'access-control-allow-headers': 'authorization, content-type',
+  };
+
+  await page.route('http://localhost:5200/**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (request.method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: corsHeaders });
+      return;
+    }
+    if (url.pathname === '/employees' && request.method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: corsHeaders,
+        body: JSON.stringify(employees),
+      });
+      return;
+    }
+    if (url.pathname === '/employees/search' && request.method() === 'GET') {
+      const keyword = (url.searchParams.get('keyword') ?? '').toLocaleLowerCase();
+      const matches = employees.filter((employee) =>
+        [employee.name, employee.department, ...employee.skills.map((skill) => skill.name)]
+          .some((value) => value.toLocaleLowerCase().includes(keyword)),
+      );
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: corsHeaders,
+        body: JSON.stringify(matches),
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 404,
+      contentType: 'application/problem+json',
+      headers: corsHeaders,
+      body: JSON.stringify({ title: 'Not found' }),
+    });
+  });
+
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: '社員スキル一覧' })).toBeVisible();
+  await expect(page.getByRole('searchbox', { name: '社員名・所属・スキルで検索' })).toBeVisible();
+
+  const documentWidths = await page.evaluate(() => ({
+    viewport: window.innerWidth,
+    document: document.documentElement.scrollWidth,
+    body: document.body.scrollWidth,
+  }));
+  expect(documentWidths.document).toBeLessThanOrEqual(documentWidths.viewport);
+  expect(documentWidths.body).toBeLessThanOrEqual(documentWidths.viewport);
+
+  const tableRegion = page.getByRole('region', { name: '社員一覧（横にスクロールできます）' });
+  await expect(tableRegion).toBeVisible();
+  const tableSizes = await tableRegion.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+  expect(tableSizes.scrollWidth).toBeGreaterThan(tableSizes.clientWidth);
+});

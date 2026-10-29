@@ -40,6 +40,46 @@ jobs:
       - name: Run browser screen-operation tests
         run: npm run test:e2e
 
+      - name: Start production preview for Lighthouse
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run preview -- --host 127.0.0.1 --port 4174 > /tmp/vite-preview.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4174/ > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/vite-preview.log
+          exit 1
+
+      - name: Run Lighthouse accessibility audit (mobile)
+        shell: bash
+        run: |
+          set -euo pipefail
+          export CHROME_PATH="$(node -e 'console.log(require("playwright").chromium.executablePath())')"
+          npx --yes lighthouse@12.8.2 http://127.0.0.1:4174/ \
+            --only-categories=accessibility \
+            --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+            --output=json \
+            --output-path=/tmp/lighthouse-accessibility.json \
+            --quiet
+          node <<'NODE'
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync('/tmp/lighthouse-accessibility.json', 'utf8'));
+          const category = report.categories.accessibility;
+          const score = category.score ?? 0;
+          console.log(`Lighthouse accessibility score: ${Math.round(score * 100)}/100`);
+          const failed = Object.values(report.audits)
+            .filter((audit) => audit.score === 0 && audit.details?.type !== 'debugdata')
+            .map((audit) => ({ id: audit.id, title: audit.title, description: audit.description }));
+          if (failed.length) {
+            console.log('Failed accessibility audits:', JSON.stringify(failed, null, 2));
+          }
+          if (score < 0.95) process.exit(1);
+          NODE
+
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4

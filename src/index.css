@@ -1,11 +1,37 @@
 /* ライトテーマの基本色、文字設定、画面全体の共通値。 */
+html { min-width: 320px; scroll-behavior: smooth; }
+*,
+*::before,
+*::after { box-sizing: border-box; }
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex="0"]:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 :root {
-  --text: #6b6375;
+  --text: #514a5d;
   --text-h: #08060d;
   --bg: #fff;
   --border: #e5e4e7;
   --code-bg: #f4f3ec;
-  --accent: #aa3bff;
+  --accent: #6f19b5;
+  --accent-button: #6f19b5;
+  --danger: #b91c1c;
+  --danger-bg: rgba(220, 38, 38, 0.1);
   --accent-bg: rgba(170, 59, 255, 0.1);
   --accent-border: rgba(170, 59, 255, 0.5);
   --social-bg: rgba(244, 243, 236, 0.5);
@@ -34,14 +60,17 @@
 /* OSがダークテーマの場合に色の変数を差し替える。 */
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #9ca3af;
+    --text: #c4c7d1;
     --text-h: #f3f4f6;
     --bg: #16171d;
     --border: #2e303a;
     --code-bg: #1f2028;
-    --accent: #c084fc;
+    --accent: #d8b4fe;
+    --accent-button: #6b21a8;
+    --danger: #fca5a5;
+    --danger-bg: rgba(248, 113, 113, 0.15);
     --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
+    --accent-border: rgba(192, 132, 252, 0.8);
     --social-bg: rgba(47, 48, 58, 0.5);
     --shadow:
       rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
@@ -69,6 +98,7 @@ body {
 }
 
 .auth-card {
+  box-sizing: border-box;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -112,18 +142,18 @@ body {
 }
 
 .auth-error {
-  background: rgba(220, 38, 38, 0.1);
-  color: #b91c1c;
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 
 .field-error {
-  color: #b91c1c;
+  color: var(--danger);
   font-size: 12px;
   margin: -8px 0 8px;
 }
 
 .auth-form input[aria-invalid='true'] {
-  border-color: #b91c1c;
+  border-color: var(--danger);
 }
 
 .auth-form {
@@ -154,11 +184,12 @@ body {
 
 .auth-form input:focus {
   border-color: var(--accent);
-  outline: 2px solid var(--accent-bg);
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .auth-submit {
-  background: var(--accent);
+  background: var(--accent-button, var(--accent));
   border: 0;
   border-radius: 8px;
   color: white;
@@ -213,16 +244,23 @@ body {
 .employee-header {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
+  flex-wrap: wrap;
   font-size: 14px;
   gap: 12px;
   justify-content: flex-end;
   margin-bottom: 20px;
 }
 
+.employee-header > span {
+  margin-right: auto;
+  overflow-wrap: anywhere;
+}
+
 .page-error {
-  background: rgba(220, 38, 38, 0.1);
+  background: var(--danger-bg);
   border-radius: 8px;
-  color: #b91c1c;
+  color: var(--danger);
   margin: 0 0 20px;
   padding: 12px 16px;
   text-align: left;
@@ -259,7 +297,10 @@ body {
   align-items: center;
   display: flex;
   gap: 8px;
-  justify-content: center;
+  justify-content: stretch;
+  margin-bottom: 12px;
+  min-width: 0;
+  width: 100%;
 }
 
 .employee-search-form input {
@@ -269,8 +310,10 @@ body {
   box-sizing: border-box;
   color: var(--text-h);
   font: inherit;
-  max-width: 360px;
-  min-height: 40px;
+  flex: 1 1 auto;
+  max-width: none;
+  min-height: 44px;
+  min-width: 0;
   padding: 8px 10px;
   width: 100%;
 }
@@ -282,13 +325,38 @@ body {
   color: var(--text-h);
   cursor: pointer;
   font: inherit;
-  min-height: 40px;
+  flex: 0 0 auto;
+  min-height: 44px;
   padding: 6px 14px;
 }
 
-.employee-table {
-  margin-inline: auto;
+.employee-table-wrapper {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  width: 100%;
 }
+.employee-table-wrapper:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.employee-table {
+  border-collapse: collapse;
+  margin-top: 10px;
+  min-width: 560px;
+  text-align: left;
+  width: 100%;
+}
+.employee-table-wrapper--admin .employee-table { min-width: 700px; }
+.employee-table th,
+.employee-table td {
+  border: 1px solid var(--border);
+  overflow-wrap: anywhere;
+  padding: 10px 12px;
+  vertical-align: top;
+}
+.employee-table th { background: var(--social-bg); color: var(--text-h); }
+.employee-table td.employee-actions { white-space: nowrap; }
 
 .employee-add-button {
   margin: 0 0 12px;
@@ -362,7 +430,7 @@ body {
 }
 
 .employee-form input[aria-invalid='true'] {
-  border-color: #b91c1c;
+  border-color: var(--danger);
 }
 
 .employee-skills {
@@ -397,8 +465,8 @@ body {
 }
 
 .delete-button {
-  border-color: #b91c1c;
-  color: #b91c1c;
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .employee-form-actions,
@@ -460,10 +528,25 @@ body {
   opacity: 0.5;
 }
 
+/* 社員一覧のコンテンツ領域。 */
+.employee-page {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 20px;
+  text-align: left;
+  width: 100%;
+}
+.employee-page-title {
+  color: var(--text-h);
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  letter-spacing: -0.02em;
+  margin: 0 0 16px;
+  overflow-wrap: anywhere;
+}
 /* アプリの中央配置と見出し・本文・コード表示の基本スタイル。 */
 #root {
-  width: 1126px;
-  max-width: 100%;
+  width: 100%;
+  max-width: 1126px;
   margin: 0 auto;
   text-align: center;
   border-inline: 1px solid var(--border);
@@ -515,4 +598,36 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+}
+
+
+/* スマートフォンでは操作列を折り返し、表だけを横スクロールさせる。 */
+@media (max-width: 640px) {
+  .auth-page { align-items: flex-start; padding: 16px 12px; }
+  .auth-card { border-radius: 12px; padding: clamp(20px, 6vw, 28px); width: 100%; }
+  .auth-title { font-size: clamp(1.75rem, 8vw, 2rem); overflow-wrap: anywhere; }
+  .employee-page { padding: 12px; }
+  .employee-header { align-items: stretch; gap: 8px; justify-content: stretch; }
+  .employee-header > span { flex: 1 1 100%; margin: 0 0 4px; text-align: left; }
+  .employee-header .logout-button {
+    flex: 1 1 calc(50% - 8px); min-width: 0; min-height: 44px;
+    overflow-wrap: anywhere; padding: 8px;
+  }
+  .employee-search-form { align-items: stretch; gap: 6px; }
+  .employee-search-form button { padding-inline: 12px; }
+  .employee-form-panel { padding: 14px; }
+  .employee-form-actions, .employee-actions { align-items: stretch; flex-wrap: wrap; }
+  .employee-form-actions > button, .employee-actions > button {
+    flex: 1 1 120px; min-width: 0; min-height: 44px;
+  }
+  .employee-form-actions .auth-submit { max-width: none; }
+  .user-list li { align-items: stretch; flex-direction: column; gap: 8px; }
+  .pagination { flex-wrap: wrap; gap: 8px; }
+  .pagination > span { flex: 1 1 100%; text-align: center; order: -1; }
+  .employee-table th, .employee-table td { padding: 8px; }
+}
+@media (max-width: 360px) {
+  .employee-header .logout-button { flex-basis: 100%; }
+  .employee-search-form { align-items: stretch; flex-direction: column; }
+  .employee-search-form button { width: 100%; min-height: 44px; }
 }

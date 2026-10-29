@@ -313,7 +313,7 @@ export default function App() {
 
   // ログイン後の画面。管理操作、エラー、検索、社員一覧を組み立てる。
   return (
-    <div style={{ padding: '20px' }}>
+    <main className="employee-page">
       <div className="employee-header">
         <span>
           {session?.id ? `ログイン中: ${session.id}` : 'ログイン中'}
@@ -331,6 +331,7 @@ export default function App() {
           type="button"
           onClick={() => setShowPasswordChange((visible) => !visible)}
           aria-expanded={showPasswordChange}
+          aria-controls="password-change-panel"
         >
           自分のパスワード変更
         </button>
@@ -340,6 +341,7 @@ export default function App() {
             type="button"
             onClick={() => setShowUserManagement((visible) => !visible)}
             aria-expanded={showUserManagement}
+            aria-controls="user-management-panel"
           >
             ユーザー管理
           </button>
@@ -363,7 +365,7 @@ export default function App() {
           )}
         </div>
       )}
-      <h2>社員スキル一覧</h2>
+      <h1 className="employee-page-title">社員スキル一覧</h1>
       {isAdmin && !showEmployeeForm && (
         <button
           className="auth-submit employee-add-button"
@@ -388,7 +390,7 @@ export default function App() {
         />
       )}
       {loading ? (
-        <p>読み込み中...</p>
+        <p role="status" aria-live="polite">読み込み中...</p>
       ) : error ? (
         null
       ) : (
@@ -410,6 +412,6 @@ export default function App() {
           />
         </>
       )}
-    </div>
+    </main>
   );
 }

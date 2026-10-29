@@ -50,7 +50,7 @@ export function PasswordChangeForm() {
 
   // 入力エラー、通信結果、送信中状態を画面に反映する。
   return (
-    <section className="employee-form-panel" aria-labelledby="password-change-title">
+    <section id="password-change-panel" className="employee-form-panel" aria-labelledby="password-change-title">
       <h3 id="password-change-title">パスワード変更</h3>
       {error && <p className="auth-error" role="alert">{error}</p>}
       {success && <p className="auth-message" role="status">{success}</p>}

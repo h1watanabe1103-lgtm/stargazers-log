@@ -22,10 +22,20 @@ export function ProductRow({ employee, isAdmin, onEdit, onDelete }: ProductRowPr
       <td>{employee.skill}</td>
       {isAdmin && (
         <td className="employee-actions">
-          <button type="button" className="form-secondary-button" onClick={() => onEdit(employee)}>
+          <button
+            type="button"
+            className="form-secondary-button"
+            onClick={() => onEdit(employee)}
+            aria-label={'編集: ' + employee.name}
+          >
             編集
           </button>
-          <button type="button" className="delete-button" onClick={() => onDelete(employee)}>
+          <button
+            type="button"
+            className="delete-button"
+            onClick={() => onDelete(employee)}
+            aria-label={'削除: ' + employee.name}
+          >
             削除
           </button>
         </td>

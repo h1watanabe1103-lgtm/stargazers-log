@@ -68,13 +68,15 @@ export function ProductTable({ employees, filterText, isAdmin, onEdit, onDelete 
       <p className="employee-count" aria-live="polite">
         {sortedEmployees.length}件
       </p>
-      <table
-        className="employee-table"
-        border={1}
-        cellPadding={8}
-        style={{ borderCollapse: 'collapse', marginTop: '10px' }}
+      <div
+        className={isAdmin ? 'employee-table-wrapper employee-table-wrapper--admin' : 'employee-table-wrapper'}
+        role="region"
+        aria-label="社員一覧（横にスクロールできます）"
+        tabIndex={0}
       >
-        <thead>
+        <table className="employee-table">
+          <caption className="visually-hidden">社員スキル一覧</caption>
+          <thead>
           <tr>
             <th scope="col" aria-sort={sortKey === 'name' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}>
               {renderSortButton('name', '社員名')}
@@ -105,7 +107,8 @@ export function ProductTable({ employees, filterText, isAdmin, onEdit, onDelete 
             </tr>
           )}
         </tbody>
-      </table>
+        </table>
+      </div>
       <nav className="pagination" aria-label="社員一覧ページ">
         <button
           type="button"

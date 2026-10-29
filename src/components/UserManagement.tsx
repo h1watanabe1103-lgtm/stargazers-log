@@ -138,7 +138,7 @@ export function UserManagement({ currentUserName }: UserManagementProps) {
 
   // 読み込み・エラー・空一覧を切り替え、選択した利用者の変更フォームを表示する。
   return (
-    <section className="employee-form-panel user-management" aria-labelledby="user-management-title">
+    <section id="user-management-panel" className="employee-form-panel user-management" aria-labelledby="user-management-title">
       <h3 id="user-management-title">ユーザー管理</h3>
       {loading ? (
         <p>ユーザー一覧を読み込み中...</p>
