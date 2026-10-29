@@ -1,0 +1,72 @@
+name: Package EmployeeApi1 ZIP
+
+on:
+  push:
+    branches: ["10月後半"]
+    paths:
+      - "EmployeeApi1/**"
+      - ".github/workflows/package-employeeapi.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    name: Create sanitized EmployeeApi1.zip
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build clean archive
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Package only tracked source from the current branch.
+          # Remove files that must never be distributed in the archive.
+          find EmployeeApi1 -type f \\( \
+            -name '.env' -o \
+            \( -name '.env.*' ! -name '.env.example' \) -o \
+            -name 'appsettings.Development.json' -o \
+            -name 'appsettings.*.local.json' -o \
+            -name 'compose.yaml.old' -o \
+            -name '*.pfx' -o \
+            -name '*.key' \
+          \\) -delete
+
+          find EmployeeApi1 -type d \\( \
+            -name '.git' -o \
+            -name '.vscode' -o \
+            -name '.claude' -o \
+            -name 'node_modules' -o \
+            -name 'bin' -o \
+            -name 'obj' -o \
+            -name 'TestResults' -o \
+            -name 'test-results' -o \
+            -name 'playwright-report' \
+          \\) -prune -exec rm -rf {} +
+
+          rm -f EmployeeApi1.zip
+          zip -qr EmployeeApi1.zip EmployeeApi1
+
+          # Basic archive safety checks: disallow obvious local-secret files.
+          if unzip -Z1 EmployeeApi1.zip | grep -E '(^|/)(\.env($|\.)|appsettings\.Development\.json|appsettings\..*\.local\.json|compose\.yaml\.old|\.vscode/|\.claude/|node_modules/|playwright-report/|test-results/)' ; then
+            echo "Unsafe local configuration or generated output found in archive."
+            exit 1
+          fi
+
+      - name: Commit archive if changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add EmployeeApi1.zip
+          if git diff --cached --quiet; then
+            echo "EmployeeApi1.zip is already up to date."
+            exit 0
+          fi
+          git commit -m "Add sanitized EmployeeApi1.zip"
+          git push
