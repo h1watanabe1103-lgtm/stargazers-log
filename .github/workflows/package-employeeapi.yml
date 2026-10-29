@@ -24,9 +24,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Package only tracked source from the current branch.
-          # Remove files that must never be distributed in the archive.
-          find EmployeeApi1 -type f \\( \
+          # Remove local-only configuration and generated results before packaging.
+          find EmployeeApi1 -type f \( \
             -name '.env' -o \
             \( -name '.env.*' ! -name '.env.example' \) -o \
             -name 'appsettings.Development.json' -o \
@@ -34,9 +33,9 @@ jobs:
             -name 'compose.yaml.old' -o \
             -name '*.pfx' -o \
             -name '*.key' \
-          \\) -delete
+          \) -delete
 
-          find EmployeeApi1 -type d \\( \
+          find EmployeeApi1 -type d \( \
             -name '.git' -o \
             -name '.vscode' -o \
             -name '.claude' -o \
@@ -46,12 +45,12 @@ jobs:
             -name 'TestResults' -o \
             -name 'test-results' -o \
             -name 'playwright-report' \
-          \\) -prune -exec rm -rf {} +
+          \) -prune -exec rm -rf {} +
 
           rm -f EmployeeApi1.zip
           zip -qr EmployeeApi1.zip EmployeeApi1
 
-          # Basic archive safety checks: disallow obvious local-secret files.
+          # Refuse the archive if known local-only files slipped into it.
           if unzip -Z1 EmployeeApi1.zip | grep -E '(^|/)(\.env($|\.)|appsettings\.Development\.json|appsettings\..*\.local\.json|compose\.yaml\.old|\.vscode/|\.claude/|node_modules/|playwright-report/|test-results/)' ; then
             echo "Unsafe local configuration or generated output found in archive."
             exit 1
